@@ -293,6 +293,28 @@ Show the next chapter's (possibly adjusted) stub:
 - **researcher failure during 1.4a**: retry once with a reformulated question. If still failing, surface and offer to continue with reduced research.
 - **chapter-expander failure**: one targeted retry. If still failing, surface.
 
+## Adaptation edge cases
+
+### Oscillating interest signals
+
+Interest signals are cumulative, not replacement. If a user expresses interest in three different topics across three chapters, all three remain in `state.json`. Adaptation logic should treat them as a coherent preference set, not prioritize the most recent one. When presenting adjustments, mention that you're honoring the full interest history.
+
+### Shaky concept with no remaining chapters
+
+If a concept is shaky after the final chapter's quiz, there's no upcoming chapter to reinforce it in. Surface this to the user: "You finished the course but <concept> was shaky. Want to do a targeted review session on it?" If yes, run a short dialogue on just that concept. Do not treat it as a new chapter.
+
+### User wants to jump ahead
+
+If the user says "skip chapter 4, go to chapter 5," honor it. Update `state.current_chapter` directly and load chapter 5. Do not re-run adaptation based on a non-completed chapter. Note the skip in `state.chapters[4].status = "skipped"`.
+
+### User wants to go back
+
+If the user says "wait, go back to chapter 3," load chapter 3 again. Its `status` may already be `"completed"` — leave it that way. Do not re-run the full loop; instead, present the chapter's briefing and offer a fresh dialogue.
+
+### Missing research file
+
+If at Step 1.4 the research file can't be written (disk error, permission issue), surface the problem and ask the user whether to retry or skip research for this chapter. Do not proceed to chapter-expander without research unless the user explicitly opts in.
+
 ## Constraints
 
 - **The briefing is pasted verbatim.** Never rewrite it.
