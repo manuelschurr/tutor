@@ -26,7 +26,7 @@ Complete in order:
 2. **Derive a slug** from the topic prompt. Check for collisions in `~/.claude/learning/index.json` and suffix with `-2`, `-3`, etc. if needed.
 3. **Light-scan research (parallel).** Dispatch 3–5 `researcher` agents in parallel for high-level questions about the topic. Findings inform the interview. Hold findings in working context; do not write to disk yet.
 4. **Interview the user** with informed questions. One question at a time. Capture: background, goals, depth, scope in/out, time budget. Mirror back understanding before proceeding.
-5. **Deep research (parallel).** Dispatch 8–15 `researcher` agents in parallel based on interview answers. Collate returns into `<course-path>/research/build-phase-summary.md`.
+5. **Deep research (parallel).** Dispatch 8–15 `researcher` agents in parallel based on interview answers. Persist each raw return to `<course-path>/research/raw/initial-NN_<slug>.md`, then collate into `<course-path>/research/build-phase-summary.md`.
 6. **Create the course folder structure** and write `course.md` from the template using interview data.
 7. **Generate the concept graph.** Dispatch `graph-builder` once. Present the validated graph + PNG to the user. Accept adjustments via `graph-mutator` dispatches until the user approves.
 8. **Generate the outline and stubs.** Dispatch `outline-builder` once. Present `outline.md` to the user. Accept adjustments (edit outline.md + re-run `graph-mutator` for chapter reassignments if needed) until the user approves.
@@ -99,9 +99,11 @@ When you think the picture is complete, summarize it in one compact paragraph an
 
 Based on the interview, derive 8–15 focused research questions. They should target the specific subfields, concepts, applications, and prerequisites the user cares about. Skip things the user excluded.
 
-**Dispatch ALL deep-research researchers in parallel.** Each gets one question and the course context summary.
+**Dispatch ALL deep-research researchers in parallel.** Each gets one question and the course context summary. Assign each dispatch an index (`01`, `02`, …) and derive a short kebab-case slug from the question — you'll need both for persisting the raw returns.
 
-**As returns arrive, collate them.** Write the consolidated file `<course-path>/research/build-phase-summary.md` yourself. The file should organize findings by theme, not by question, so the graph-builder has a coherent view. Suggested structure:
+**As returns arrive, persist each raw return verbatim.** Before collating, write each researcher's full structured return to `<course-path>/research/raw/initial-NN_<slug>.md`, where `NN` is the dispatch index and `<slug>` is the short label you derived from the question. Create `<course-path>/research/raw/` on first write — the full course folder structure is set up in Step 6, but the research subdirectory is created early here so raws can be persisted as returns arrive. Each raw file should contain the researcher's return exactly as received, nothing more. These files are the audit trail and survive context clears; the summary is what downstream agents read.
+
+**Then collate.** Write the consolidated file `<course-path>/research/build-phase-summary.md` yourself. The file should organize findings by theme, not by question, so the graph-builder has a coherent view. Suggested structure:
 
 ```markdown
 # Build-Phase Research Summary
@@ -199,9 +201,11 @@ Chapter 1 is expanded in full during `/tutor:create` so the user can start study
 
 Read the chapter 1 stub (`<course-path>/chapters/01-<slug>.md`). Derive 3–6 focused research questions from the stub's "What the agent will research and explain when expanded" bullets and the chapter's concept list (which you can cross-reference in `<course-path>/concepts.dot`).
 
-**Dispatch the researchers in parallel.** Each gets one question plus the course context summary. All in a single message with multiple Agent tool calls.
+**Dispatch the researchers in parallel.** Each gets one question plus the course context summary. All in a single message with multiple Agent tool calls. Assign each dispatch an index (`01`, `02`, …) and derive a short kebab-case slug from the question.
 
-As returns arrive, collate them into `<course-path>/research/chapter-01-research.md` using this structure:
+**As returns arrive, persist each raw return verbatim** to `<course-path>/research/raw/chapter-01_NN_<slug>.md` (where `NN` is the dispatch index). Each raw file should contain the researcher's return exactly as received. This mirrors Step 5's persistence pattern so nothing is lost if the session is cleared mid-chapter-expansion.
+
+Then collate the returns into `<course-path>/research/chapter-01-research.md` using this structure:
 
 ```markdown
 # Chapter 01 Research
@@ -312,4 +316,4 @@ You can also:
 - **Each graph-mutator dispatch is one mutation.** Do not batch unrelated changes.
 - **The main agent never pastes a subagent's full output** into the conversation — read the structured return, spot-check files, surface findings in natural language.
 - **Do not proceed past a user approval gate without explicit confirmation.** Graph approval and outline approval are hard gates.
-- **`research/build-phase-summary.md` is written by the main agent**, not by any subagent.
+- **`research/build-phase-summary.md` and all files under `research/raw/` are written by the main agent**, not by any subagent. Researchers return structured markdown; the main agent persists raws verbatim and then writes the collated summary.

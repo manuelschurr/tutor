@@ -1,6 +1,6 @@
 {
   "name": "tutor",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A personal adaptive learning plugin. Create a custom course on any topic and study it through guided, expert-tutor-style sessions inside Claude Code.",
   "author": {
     "name": "Manuel Schurr"
