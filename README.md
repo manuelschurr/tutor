@@ -11,7 +11,7 @@ Courses live under `~/.claude/learning/<course-slug>/` as plain markdown, JSON, 
 
 ## How it works
 
-The plugin draws from Dan McCreary's intelligent-textbook work but scopes it down for personal use:
+A few ideas shape how the plugin works:
 
 - **A concept graph** (`concepts.dot`) is the ground truth. Every concept in your course is a node; edges encode "A depends on B". The graph is validated after every change.
 - **Chapters start as stubs and expand lazily.** When you start a new chapter in `/tutor:study`, the plugin runs focused web research, then generates a full lesson plan for that chapter. This makes adaptation cheap — upcoming chapters can shift emphasis based on how your earlier ones went.
