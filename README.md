@@ -73,4 +73,4 @@ Everything is plain text. Run `git init` inside the course folder to get a full 
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE).
