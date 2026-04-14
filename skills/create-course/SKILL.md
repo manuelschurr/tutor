@@ -193,7 +193,94 @@ Update `~/.claude/learning/index.json`:
 
 ## Step 10 — Expand chapter 1
 
-(Placeholder for this slice — filled in by Task 16 during Slice 4.)
+Chapter 1 is expanded in full during `/tutor:create` so the user can start studying immediately. All other chapters are expanded lazily at study time in `/tutor:study`.
+
+### Step 10.1 — Per-chapter research for chapter 1 (parallel)
+
+Read the chapter 1 stub (`<course-path>/chapters/01-<slug>.md`). Derive 3–6 focused research questions from the stub's "What the agent will research and explain when expanded" bullets and the chapter's concept list (which you can cross-reference in `<course-path>/concepts.dot`).
+
+**Dispatch the researchers in parallel.** Each gets one question plus the course context summary. All in a single message with multiple Agent tool calls.
+
+As returns arrive, collate them into `<course-path>/research/chapter-01-research.md` using this structure:
+
+```markdown
+# Chapter 01 Research
+
+## Concepts covered
+<list the concepts from the chapter>
+
+## Research question 1: <question>
+<key findings as bullets>
+
+## Research question 2: <question>
+<key findings as bullets>
+
+...
+
+## Sources
+<de-duplicated list>
+
+## Flags
+<any low-confidence areas or contradictions>
+```
+
+### Step 10.2 — Dispatch chapter-expander
+
+```
+Agent({
+  subagent_type: "chapter-expander",
+  prompt: "Expand chapter 1 of the course at <course-path>.
+
+Stub file: <course-path>/chapters/01-<slug>.md
+Research file: <course-path>/research/chapter-01-research.md
+Course description: <course-path>/course.md
+Outline: <course-path>/outline.md
+Concept graph: <course-path>/concepts.dot
+State file: <course-path>/state.json
+Template: <plugin-path>/templates/chapter-expanded.md
+
+Adaptation context:
+- This is the first chapter of the course; no prior quiz data exists.
+- Interest signals: none yet.
+- Special requests from user: <any specific asks captured during the create flow, or 'none'>.
+
+Follow your standard contract. Return when the chapter file has been rewritten from stub to expanded form."
+})
+```
+
+### Step 10.3 — Integrate the return
+
+When chapter-expander returns:
+
+1. Read the expanded `<course-path>/chapters/01-<slug>.md` and spot-check:
+   - Frontmatter has `status: expanded` and an `expanded_at` timestamp.
+   - Briefing section is present and non-empty.
+   - Must-cover checklist covers all the chapter's concepts.
+   - Probing questions bank has 8–15 items.
+   - End-of-chapter quiz has 5–8 questions.
+2. If any spot check fails, ask the chapter-expander to fix the missing section (one targeted retry).
+3. Initialize `<course-path>/state.json`:
+
+```json
+{
+  "schema_version": 1,
+  "course_slug": "<slug>",
+  "created_at": "<ISO_TIMESTAMP>",
+  "last_studied_at": null,
+  "current_chapter": 1,
+  "chapters": [
+    {
+      "id": 1,
+      "status": "ready",
+      "session_count": 0
+    }
+  ],
+  "interest_signals": [],
+  "shaky_concepts_global": []
+}
+```
+
+Mark chapter 1's status as `"ready"` (not `"in_progress"` — the user hasn't started studying yet).
 
 ## Step 11 — Hand off
 
