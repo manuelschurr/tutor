@@ -19,6 +19,8 @@ Exit codes:
   1 — one or more checks failed (error report written to stdout)
   2 — invocation error (missing file, bad arguments)
 """
+from __future__ import annotations
+
 import argparse
 import re
 import sys
@@ -121,18 +123,18 @@ def main() -> int:
             errors.append(f"FAIL [dag]: cycle detected: {' -> '.join(cycle)} -> {cycle[0]}")
 
     # --- 5. Connectedness ---
-    # Foundational = no outgoing edges (no prerequisites).
-    foundational = {n for n in nodes if nx_graph.out_degree(n) == 0}
-    if not foundational and nodes:
-        errors.append("FAIL [connectedness]: no foundational concepts (nodes with no prerequisites) exist")
-    else:
-        for node_id in nodes:
-            if node_id in foundational:
-                continue
-            # Does this node reach any foundational node via outgoing edges?
-            reachable = nx.descendants(nx_graph, node_id) | {node_id}
-            if not (reachable & foundational):
-                errors.append(f"FAIL [connectedness]: concept '{node_id}' has no path to any foundational concept")
+    # Reject orphan islands: the graph should be one weakly-connected component.
+    # (A DAG automatically has every node reaching some sink, so the check that
+    # matters is whether there are multiple disconnected subgraphs.)
+    if nodes:
+        num_components = nx.number_weakly_connected_components(nx_graph)
+        if num_components > 1:
+            components = list(nx.weakly_connected_components(nx_graph))
+            component_sizes = sorted([len(c) for c in components], reverse=True)
+            errors.append(
+                f"FAIL [connectedness]: graph has {num_components} disconnected components "
+                f"(sizes: {component_sizes}); the course should be one connected graph"
+            )
 
     # --- 6. Chapter assignment (only if outline provided) ---
     if args.outline is not None:
@@ -140,11 +142,19 @@ def main() -> int:
             print(f"ERROR: outline file not found: {args.outline}", file=sys.stderr)
             return 2
         outline_text = args.outline.read_text()
-        # Match "## Chapter NN" headings — loose, tolerates "## Chapter 01: Title" etc.
-        chapter_ids = set(re.findall(r"##\s*Chapter\s+(\S+?)(?:\s*:|\s*$)", outline_text, re.MULTILINE))
-        # Also tolerate plain "## NN" and "## NN - Title".
-        if not chapter_ids:
-            chapter_ids = set(re.findall(r"^##\s*(\d+)", outline_text, re.MULTILINE))
+        # Match chapter headings in several common styles:
+        #   ## Chapter 01
+        #   ## Chapter 01: Title
+        #   ## Chapter 01 - Title
+        #   ## Chapter 01 — Title (em dash)
+        #   ## 01 Title
+        chapter_ids: set[str] = set()
+        for match in re.finditer(r"^##\s*(?:Chapter\s+)?(\S+)", outline_text, re.MULTILINE):
+            raw = match.group(1)
+            # Strip trailing punctuation that commonly attaches to the id.
+            cid = raw.rstrip(":,.;-")
+            if cid:
+                chapter_ids.add(cid)
         for node_id, attrs in nodes.items():
             chapter = attrs.get("chapter", "")
             if chapter and chapter != "null" and chapter not in chapter_ids:

@@ -181,6 +181,7 @@ digraph G {
 
 
 def test_orphan_component_fails(tmp_path):
+    """Two disconnected components (each acyclic) should fail the connectedness check."""
     dot = write_dot(tmp_path, '''
 digraph G {
   a [label="Alpha", taxonomy="t1", status="pending", chapter="01"];
@@ -189,11 +190,11 @@ digraph G {
   c [label="Gamma", taxonomy="t1", status="pending", chapter="03"];
   d [label="Delta", taxonomy="t1", status="pending", chapter="04"];
   d -> c;
-  c -> d;
 }
 ''')
     code, out, err = run_validator(dot)
     assert code != 0
+    assert "connectedness" in (out + err).lower() or "component" in (out + err).lower()
 
 
 # ============================================================
@@ -244,6 +245,34 @@ digraph G {
 }
 ''')
     code, out, err = run_validator(dot)
+    assert code == 0, f"stdout={out} stderr={err}"
+
+
+def test_chapter_assignment_tolerates_mixed_heading_styles(tmp_path):
+    """Outline parser should handle multiple common heading styles in one file."""
+    dot = write_dot(tmp_path, '''
+digraph G {
+  a [label="Alpha", taxonomy="t1", status="pending", chapter="01"];
+  b [label="Beta", taxonomy="t1", status="pending", chapter="02"];
+  c [label="Gamma", taxonomy="t1", status="pending", chapter="03"];
+  b -> a;
+  c -> b;
+}
+''')
+    outline = tmp_path / "outline.md"
+    outline.write_text("""# Outline
+
+## Chapter 01: Intro
+
+Body text here.
+
+## Chapter 02 - Next
+
+More body text.
+
+## Chapter 03
+""")
+    code, out, err = run_validator(dot, outline)
     assert code == 0, f"stdout={out} stderr={err}"
 
 
