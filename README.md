@@ -33,7 +33,7 @@ The plugin will check for these at first run and surface install instructions if
 ## Example
 
 ```
-/tutor:create I want to know more about remote sensing, with a focus on military and nature conservation applications as well as a focus on satellites, specifically SAR.
+/tutor:create I want to know more about rewilding, with a focus on trophic cascades and large-herbivore reintroduction in European ecosystems, specifically wolves.
 ```
 
 The plugin will:
@@ -59,7 +59,7 @@ Resumes the most recent course and walks you through the next chapter.
 Each course lives in `~/.claude/learning/<slug>/`:
 
 ```
-remote-sensing-sar/
+rewilding-wolves/
 ├── course.md            ← title, your learner profile, scope, design rationale
 ├── concepts.dot         ← the concept graph (canonical)
 ├── concepts.png         ← rendered graph image (if Graphviz installed)
