@@ -66,11 +66,28 @@ Read the chapter file at `<course-path>/chapters/NN-<slug>.md`. Check its frontm
 
 From the stub's "What the agent will research and explain when expanded" bullets and the chapter's concept list (cross-referenced in `<course-path>/concepts.dot`), derive 3–6 focused research questions.
 
-**Dispatch researchers in parallel.** Multiple Agent tool calls in a single message. Each call: `subagent_type: "researcher"`, prompt contains the question plus the course context.
+**Dispatch researchers in parallel.** Multiple Agent tool calls in a single message. Each call: `subagent_type: "researcher"`, prompt contains the question plus the course context **and a pointer to the existing research index**:
+
+```
+Prior research index: <course-path>/research/INDEX.md
+(Read it first — if an existing raw under research/raw/ answers your question, reuse it instead of re-searching the web. See Step 0 in your agent instructions.)
+```
+
+Assign each dispatch an index (`01`, `02`, …) and derive a short kebab-case slug from the question — you'll need both for persisting the raw returns.
 
 #### Step 1.4b — Collate research
 
-As returns arrive, write `<course-path>/research/chapter-NN-research.md` using the same structure as the build-phase summary:
+**First, persist each raw return verbatim** to `<course-path>/research/raw/chapter-NN_MM_<slug>.md` (where `NN` is the chapter number and `MM` is the dispatch index within this chapter). Each raw file holds the researcher's return exactly as received.
+
+**Then append one line per raw to `<course-path>/research/INDEX.md`** under a new section heading `## Chapter NN (<chapter title>)` (create the heading on first chapter-NN write). Line format matches the build-phase entries:
+
+```
+- `raw/chapter-NN_MM_<slug>.md` — **<short topic title>**: <3–6 keywords pulled from Key findings>
+```
+
+Keep each line under ~150 chars. If a researcher's return included a `**Prior research reused**` field, that's expected — still write the raw and still add the index line. The raw captures the synthesized answer; the index line points to it.
+
+**Finally, write the collated `<course-path>/research/chapter-NN-research.md`** using the same structure as the build-phase summary:
 
 ```markdown
 # Chapter NN Research
@@ -324,4 +341,4 @@ If at Step 1.4 the research file can't be written (disk error, permission issue)
 - **Meta-analysis is mandatory.** Do not skip Step 7 even if the quiz score is perfect — interest signals still need capturing.
 - **State persistence is mandatory at chapter boundaries.** Never advance to the next chapter with a half-saved state.
 - **Graph mutations go through graph-mutator only.** Never write to `concepts.dot` directly from this skill.
-- **`research/chapter-NN-research.md` is written by the main agent**, not by any subagent.
+- **`research/chapter-NN-research.md`, `research/raw/*`, and `research/INDEX.md` are written by the main agent**, not by any subagent. Researchers return structured markdown; the main agent persists raws, appends index lines, and writes the collated file.

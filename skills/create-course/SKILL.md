@@ -101,7 +101,34 @@ Based on the interview, derive 8–15 focused research questions. They should ta
 
 **Dispatch ALL deep-research researchers in parallel.** Each gets one question and the course context summary. Assign each dispatch an index (`01`, `02`, …) and derive a short kebab-case slug from the question — you'll need both for persisting the raw returns.
 
+Note on the INDEX pointer: the first deep-research batch cannot benefit from `research/INDEX.md` because it does not exist yet — do not add the pointer to these dispatch prompts. The index is created below as the batch returns, and future dispatches (chapter 1 in Step 10.1, and every per-chapter research batch in `/tutor:study`) will include it.
+
 **As returns arrive, persist each raw return verbatim.** Before collating, write each researcher's full structured return to `<course-path>/research/raw/initial-NN_<slug>.md`, where `NN` is the dispatch index and `<slug>` is the short label you derived from the question. Create `<course-path>/research/raw/` on first write — the full course folder structure is set up in Step 6, but the research subdirectory is created early here so raws can be persisted as returns arrive. Each raw file should contain the researcher's return exactly as received, nothing more. These files are the audit trail and survive context clears; the summary is what downstream agents read.
+
+**Append one line per raw to `<course-path>/research/INDEX.md`.** Create the file with this header on first write:
+
+```markdown
+# Research Index
+
+One-line pointers to every raw research file in `raw/`. Researcher subagents
+read this before dispatching web searches — a prior raw may already answer the
+question. Each entry: path | **topic title** | 3–6 keywords pulled from the
+researcher's Key findings.
+
+## Build-phase (initial deep scans)
+```
+
+Then append one line per raw file, under the `## Build-phase (initial deep scans)` section, in dispatch-index order:
+
+```
+- `raw/initial-NN_<slug>.md` — **<short topic title>**: <3–6 comma-separated keywords>
+```
+
+Keep each line under ~150 chars. Pull the topic title and keywords from the researcher's Key findings — not from the question verbatim. Example:
+
+```
+- `raw/initial-05_insar-time-series.md` — **InSAR & time series**: interferometry, coherence, deformation, PSI/SBAS, Sentinel-1 stacks
+```
 
 **Then collate.** Write the consolidated file `<course-path>/research/build-phase-summary.md` yourself. The file should organize findings by theme, not by question, so the graph-builder has a coherent view. Suggested structure:
 
@@ -201,9 +228,24 @@ Chapter 1 is expanded in full during `/tutor:create` so the user can start study
 
 Read the chapter 1 stub (`<course-path>/chapters/01-<slug>.md`). Derive 3–6 focused research questions from the stub's "What the agent will research and explain when expanded" bullets and the chapter's concept list (which you can cross-reference in `<course-path>/concepts.dot`).
 
-**Dispatch the researchers in parallel.** Each gets one question plus the course context summary. All in a single message with multiple Agent tool calls. Assign each dispatch an index (`01`, `02`, …) and derive a short kebab-case slug from the question.
+**Dispatch the researchers in parallel.** Each gets one question plus the course context summary **and a pointer to the existing research index**. All in a single message with multiple Agent tool calls. Assign each dispatch an index (`01`, `02`, …) and derive a short kebab-case slug from the question.
+
+Include this line in every per-chapter researcher prompt (adapt the path to the actual course path):
+
+```
+Prior research index: <course-path>/research/INDEX.md
+(Read it first — if an existing raw under research/raw/ answers your question, reuse it instead of re-searching the web. See Step 0 in your agent instructions.)
+```
 
 **As returns arrive, persist each raw return verbatim** to `<course-path>/research/raw/chapter-01_NN_<slug>.md` (where `NN` is the dispatch index). Each raw file should contain the researcher's return exactly as received. This mirrors Step 5's persistence pattern so nothing is lost if the session is cleared mid-chapter-expansion.
+
+**Append one line per raw to `<course-path>/research/INDEX.md`** (which already exists from Step 5). Add a new section heading `## Chapter 01 (<chapter title>)` if not already present, then one line per raw using the same format as Step 5:
+
+```
+- `raw/chapter-01_NN_<slug>.md` — **<short topic title>**: <3–6 keywords>
+```
+
+If a researcher's return included a `**Prior research reused**` field, that's expected and fine — the raw is still written and still gets its own index line (the raw captures the synthesized answer; the index line points to it). This keeps the index complete without double-bookkeeping about reuse.
 
 Then collate the returns into `<course-path>/research/chapter-01-research.md` using this structure:
 
@@ -316,4 +358,4 @@ You can also:
 - **Each graph-mutator dispatch is one mutation.** Do not batch unrelated changes.
 - **The main agent never pastes a subagent's full output** into the conversation — read the structured return, spot-check files, surface findings in natural language.
 - **Do not proceed past a user approval gate without explicit confirmation.** Graph approval and outline approval are hard gates.
-- **`research/build-phase-summary.md` and all files under `research/raw/` are written by the main agent**, not by any subagent. Researchers return structured markdown; the main agent persists raws verbatim and then writes the collated summary.
+- **`research/build-phase-summary.md`, `research/INDEX.md`, and all files under `research/raw/` are written by the main agent**, not by any subagent. Researchers return structured markdown; the main agent persists raws verbatim, appends one index line per raw, and then writes the collated summary.
